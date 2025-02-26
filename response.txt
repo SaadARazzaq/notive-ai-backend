@@ -1,0 +1,1374 @@
+./client/websocket.ts:
+---------------------
+let socket: WebSocket | null = null;
+let selectedAgent: string = "ballad"; // Default agent
+
+export const connectWebSocket = (onMessage: (data: any) => void) => {
+  socket = new WebSocket("ws://localhost:8000/ws");
+
+  socket.onopen = () => {
+    console.log("✅ WebSocket connected.");
+  };
+
+// WebSocket event handling
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log("📩 WebSocket Message from Backend:", data);
+  
+    if (data.type === "text") {
+      console.log("🗣 Assistant Responded:", data.message);
+      setMessages((prev) => [...prev, { text: data.message, sender: "assistant" }]);
+    }
+  };
+  
+
+  socket.onerror = (error) => {
+    console.error("❌ WebSocket Error:", error);
+  };
+
+  socket.onclose = () => {
+    console.log("❌ WebSocket disconnected.");
+  };
+};
+
+export const setAgent = (agent: string) => {
+  selectedAgent = agent;
+  console.log(`✅ Selected Agent: ${agent}`);
+};
+
+// ✅ Fix: Ensure message includes the selected agent
+export const sendMessage = (message: string) => {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    const payload = { type: "command", agent: selectedAgent, message };
+    console.log("📤 Sending message to WebSocket:", payload);
+    socket.send(JSON.stringify(payload));
+  } else {
+    console.warn("⚠ WebSocket is not connected.");
+  }
+};
+
+export const closeWebSocket = () => {
+  if (socket) {
+    socket.close();
+  }
+};
+
+
+./client/App.tsx:
+----------------
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { AIAvatar } from './components/AIAvatar';
+import { WaveformVisualizer } from './components/WaveformVisualizer';
+import { VoiceControls } from './components/VoiceControls';
+
+// ✅ Fix: Correct import
+import { setAgent, sendMessage, connectWebSocket } from './api/websocket';
+
+function App() {
+  const [isActive, setIsActive] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState("ballad");
+
+  const handleStart = () => {
+    setIsActive(true);
+  };
+
+  const handleStop = () => {
+    setIsActive(false);
+  };
+
+  const handleAgentChange = (agent: string) => {
+    setSelectedAgent(agent);
+    setAgent(agent); // ✅ Update the agent
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] text-white p-8 relative overflow-hidden">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto space-y-12 relative z-10">
+        <header className="text-center mb-16">
+          <motion.h1
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--neon-blue)] via-[var(--neon-purple)] to-[var(--neon-pink)]"
+          >
+            AI Assistant
+          </motion.h1>
+        </header>
+
+        {/* ✅ Fix: Add Agent Selection */}
+        <div className="flex justify-center gap-4">
+          <label className="text-white">Choose Agent:</label>
+          <select
+            className="p-2 bg-gray-800 text-white rounded-md"
+            value={selectedAgent}
+            onChange={(e) => handleAgentChange(e.target.value)}
+          >
+            <option value="ballad">Ballad (Male)</option>
+            <option value="echo">Echo (Male)</option>
+            <option value="ash">Ash (Male)</option>
+            <option value="coral">Coral (Female)</option>
+            <option value="sage">Sage (Female)</option>
+            <option value="shimmer">Shimmer (Female)</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col items-center space-y-8">
+          <AIAvatar />
+          <WaveformVisualizer isActive={isActive} />
+          <VoiceControls onStart={handleStart} onStop={handleStop} />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default App;
+
+
+./client/main.tsx:
+-----------------
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+
+./client/tsconfig.node.json:
+---------------------------
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+
+./client/index.html:
+-------------------
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React + TS</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+
+./client/tailwind.config.js:
+---------------------------
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        'neon-blue': 'var(--neon-blue)',
+        'neon-purple': 'var(--neon-purple)',
+        'neon-pink': 'var(--neon-pink)',
+      },
+      animation: {
+        'matrix-scan': 'matrix-scan 10s linear infinite',
+      },
+    },
+  },
+  plugins: [],
+};
+
+./client/tsconfig.app.json:
+--------------------------
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+
+
+./client/index.css:
+------------------
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --neon-blue: #00f3ff;
+    --neon-purple: #9d00ff;
+    --neon-pink: #ff00f7;
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+body {
+  background: #0a0a0f;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+}
+
+button {
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Glowing text effect */
+.glow-text {
+  text-shadow: 0 0 10px var(--neon-blue),
+               0 0 20px var(--neon-blue),
+               0 0 30px var(--neon-blue);
+}
+
+/* Futuristic scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 243, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-blue);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-purple);
+}
+
+./client/WaveformVisualizer.tsx:
+-------------------------------
+import { useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+
+export function WaveformVisualizer({ isActive = false }) {
+  const bars = Array.from({ length: 32 }, (_, i) => i);
+  
+  return (
+    <motion.div 
+      className="h-24 flex items-center justify-center gap-1 px-4 glass-panel"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {bars.map((i) => (
+        <motion.div
+          key={i}
+          className="w-1.5 bg-[var(--neon-blue)] rounded-full"
+          animate={{
+            height: isActive ? [20, Math.random() * 60 + 20, 20] : 20,
+          }}
+          transition={{
+            duration: 0.5,
+            repeat: isActive ? Infinity : 0,
+            ease: "linear",
+          }}
+          style={{
+            filter: "blur(0.5px)",
+            boxShadow: "0 0 8px var(--neon-blue)",
+          }}
+        />
+      ))}
+    </motion.div>
+  );
+}
+
+./client/VoiceControls.tsx:
+--------------------------
+import { useState, useEffect } from "react";
+import { Mic, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+export function VoiceControls({ onStart, onStop }) {
+  const [isListening, setIsListening] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (isListening) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+          setAudioStream(stream);
+          console.log("🎤 Mic activated", stream);
+          
+          // Log audio data (ensure mic is capturing)
+          const audioContext = new AudioContext();
+          const source = audioContext.createMediaStreamSource(stream);
+          const analyser = audioContext.createAnalyser();
+          source.connect(analyser);
+
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          
+          const checkMicInput = () => {
+            analyser.getByteFrequencyData(dataArray);
+            console.log("🎙️ Mic Data:", dataArray);
+          };
+          
+          setInterval(checkMicInput, 500);
+        })
+        .catch((error) => console.error("❌ Mic access error:", error));
+    } else {
+      if (audioStream) {
+        audioStream.getTracks().forEach((track) => track.stop());
+        console.log("🛑 Mic stopped");
+        setAudioStream(null);
+      }
+    }
+  }, [isListening]);
+
+  const handleMicClick = () => {
+    setIsListening(!isListening);
+    if (!isListening) {
+      onStart?.();
+    } else {
+      onStop?.();
+    }
+  };
+
+  const handleStopClick = () => {
+    setIsListening(false);
+    onStop?.();
+  };
+
+  return (
+    <div className="flex justify-center gap-4">
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleMicClick}
+        className={`p-6 rounded-full relative ${
+          isListening ? "bg-[var(--neon-pink)]" : "bg-[var(--neon-blue)]"
+        }`}
+        style={{
+          boxShadow: `0 0 20px ${isListening ? "var(--neon-pink)" : "var(--neon-blue)"}`,
+        }}
+      >
+        <Mic className="w-8 h-8" />
+        {isListening && (
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-white"
+            initial={{ scale: 1 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+        )}
+      </motion.button>
+
+      {isListening && (
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleStopClick}
+          className="p-6 rounded-full bg-red-500"
+          style={{
+            boxShadow: "0 0 20px rgba(239, 68, 68, 0.5)",
+          }}
+        >
+          <X className="w-8 h-8" />
+        </motion.button>
+      )}
+    </div>
+  );
+}
+
+
+./client/AgentSelector.tsx:
+--------------------------
+import React, { useState } from "react";
+
+interface AgentSelectorProps {
+  onSelect: (agent: string) => void;
+}
+
+export const AgentSelector: React.FC<AgentSelectorProps> = ({ onSelect }) => {
+  const [selectedAgent, setSelectedAgent] = useState("");
+
+  const agents = [
+    { name: "Ballad (Male)", value: "ballad" },
+    { name: "Echo (Male)", value: "echo" },
+    { name: "Ash (Male)", value: "ash" },
+    { name: "Coral (Female)", value: "coral" },
+    { name: "Sage (Female)", value: "sage" },
+    { name: "Shimmer (Female)", value: "shimmer" },
+  ];
+
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedAgent(event.target.value);
+    onSelect(event.target.value);
+  };
+
+  return (
+    <div className="flex flex-col items-center mt-8">
+      <label className="text-lg font-bold mb-2">Select Your AI Assistant:</label>
+      <select
+        className="p-3 rounded-lg bg-gray-800 text-white"
+        value={selectedAgent}
+        onChange={handleChange}
+      >
+        <option value="">-- Choose an Assistant --</option>
+        {agents.map((agent) => (
+          <option key={agent.value} value={agent.value}>
+            {agent.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+
+./client/package.json:
+---------------------
+{
+  "name": "vite-react-typescript-starter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-react": "^0.344.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "framer-motion": "^11.0.8",
+    "three": "^0.162.0",
+    "@react-three/fiber": "^8.15.19",
+    "@react-three/drei": "^9.99.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.162.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^9.9.1",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "globals": "^15.9.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.3.0",
+    "vite": "^5.4.2"
+  }
+}
+
+./client/vite-env.d.ts:
+----------------------
+/// <reference types="vite/client" />
+
+
+./client/tsconfig.json:
+----------------------
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+
+
+./client/AIAvatar.tsx:
+---------------------
+import { useRef } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { motion } from 'framer-motion';
+
+export function AIAvatar() {
+  const sphereRef = useRef();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-80 h-80 rounded-full overflow-hidden glass-panel relative"
+      style={{
+        boxShadow: "0 0 40px rgba(0, 243, 255, 0.2)",
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(0,243,255,0.1)] z-10" />
+      <Canvas>
+        <ambientLight intensity={0.6} />
+        <pointLight position={[10, 10, 10]} intensity={1.5} color="#00f3ff" />
+        <pointLight position={[-10, -10, -10]} intensity={0.5} color="#9d00ff" />
+        <Sphere ref={sphereRef} args={[1.2, 64, 64]}>
+          <MeshDistortMaterial
+            color="#00f3ff"
+            attach="material"
+            distort={0.4}
+            speed={2}
+            metalness={0.9}
+            roughness={0.2}
+          />
+        </Sphere>
+        <OrbitControls 
+          enableZoom={false} 
+          autoRotate 
+          autoRotateSpeed={3}
+          maxPolarAngle={Math.PI / 1.5}
+          minPolarAngle={Math.PI / 3}
+        />
+      </Canvas>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent z-20" />
+    </motion.div>
+  );
+}
+
+./client/eslint.config.js:
+-------------------------
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  { ignores: ['dist'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  }
+);
+
+
+./client/vite.config.ts:
+-----------------------
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: {
+    exclude: ['lucide-react'],
+  },
+});
+
+
+./client/postcss.config.js:
+--------------------------
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+
+./client/components/WaveformVisualizer.tsx:
+------------------------------------------
+import { useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+
+export function WaveformVisualizer({ isActive = false }) {
+  const bars = Array.from({ length: 32 }, (_, i) => i);
+  
+  return (
+    <motion.div 
+      className="h-24 flex items-center justify-center gap-1 px-4 glass-panel"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {bars.map((i) => (
+        <motion.div
+          key={i}
+          className="w-1.5 bg-[var(--neon-blue)] rounded-full"
+          animate={{
+            height: isActive ? [20, Math.random() * 60 + 20, 20] : 20,
+          }}
+          transition={{
+            duration: 0.5,
+            repeat: isActive ? Infinity : 0,
+            ease: "linear",
+          }}
+          style={{
+            filter: "blur(0.5px)",
+            boxShadow: "0 0 8px var(--neon-blue)",
+          }}
+        />
+      ))}
+    </motion.div>
+  );
+}
+
+./client/components/VoiceControls.tsx:
+-------------------------------------
+import { useState, useEffect } from "react";
+import { Mic, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+export function VoiceControls({ onStart, onStop }) {
+  const [isListening, setIsListening] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (isListening) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+          setAudioStream(stream);
+          console.log("🎤 Mic activated", stream);
+          
+          // Log audio data (ensure mic is capturing)
+          const audioContext = new AudioContext();
+          const source = audioContext.createMediaStreamSource(stream);
+          const analyser = audioContext.createAnalyser();
+          source.connect(analyser);
+
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          
+          const checkMicInput = () => {
+            analyser.getByteFrequencyData(dataArray);
+            console.log("🎙️ Mic Data:", dataArray);
+          };
+          
+          setInterval(checkMicInput, 500);
+        })
+        .catch((error) => console.error("❌ Mic access error:", error));
+    } else {
+      if (audioStream) {
+        audioStream.getTracks().forEach((track) => track.stop());
+        console.log("🛑 Mic stopped");
+        setAudioStream(null);
+      }
+    }
+  }, [isListening]);
+
+  const handleMicClick = () => {
+    setIsListening(!isListening);
+    if (!isListening) {
+      onStart?.();
+    } else {
+      onStop?.();
+    }
+  };
+
+  const handleStopClick = () => {
+    setIsListening(false);
+    onStop?.();
+  };
+
+  return (
+    <div className="flex justify-center gap-4">
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleMicClick}
+        className={`p-6 rounded-full relative ${
+          isListening ? "bg-[var(--neon-pink)]" : "bg-[var(--neon-blue)]"
+        }`}
+        style={{
+          boxShadow: `0 0 20px ${isListening ? "var(--neon-pink)" : "var(--neon-blue)"}`,
+        }}
+      >
+        <Mic className="w-8 h-8" />
+        {isListening && (
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-white"
+            initial={{ scale: 1 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+        )}
+      </motion.button>
+
+      {isListening && (
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleStopClick}
+          className="p-6 rounded-full bg-red-500"
+          style={{
+            boxShadow: "0 0 20px rgba(239, 68, 68, 0.5)",
+          }}
+        >
+          <X className="w-8 h-8" />
+        </motion.button>
+      )}
+    </div>
+  );
+}
+
+
+./client/components/AgentSelector.tsx:
+-------------------------------------
+import React, { useState } from "react";
+
+interface AgentSelectorProps {
+  onSelect: (agent: string) => void;
+}
+
+export const AgentSelector: React.FC<AgentSelectorProps> = ({ onSelect }) => {
+  const [selectedAgent, setSelectedAgent] = useState("");
+
+  const agents = [
+    { name: "Ballad (Male)", value: "ballad" },
+    { name: "Echo (Male)", value: "echo" },
+    { name: "Ash (Male)", value: "ash" },
+    { name: "Coral (Female)", value: "coral" },
+    { name: "Sage (Female)", value: "sage" },
+    { name: "Shimmer (Female)", value: "shimmer" },
+  ];
+
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedAgent(event.target.value);
+    onSelect(event.target.value);
+  };
+
+  return (
+    <div className="flex flex-col items-center mt-8">
+      <label className="text-lg font-bold mb-2">Select Your AI Assistant:</label>
+      <select
+        className="p-3 rounded-lg bg-gray-800 text-white"
+        value={selectedAgent}
+        onChange={handleChange}
+      >
+        <option value="">-- Choose an Assistant --</option>
+        {agents.map((agent) => (
+          <option key={agent.value} value={agent.value}>
+            {agent.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+
+./client/components/AIAvatar.tsx:
+--------------------------------
+import { useRef } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { motion } from 'framer-motion';
+
+export function AIAvatar() {
+  const sphereRef = useRef();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-80 h-80 rounded-full overflow-hidden glass-panel relative"
+      style={{
+        boxShadow: "0 0 40px rgba(0, 243, 255, 0.2)",
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(0,243,255,0.1)] z-10" />
+      <Canvas>
+        <ambientLight intensity={0.6} />
+        <pointLight position={[10, 10, 10]} intensity={1.5} color="#00f3ff" />
+        <pointLight position={[-10, -10, -10]} intensity={0.5} color="#9d00ff" />
+        <Sphere ref={sphereRef} args={[1.2, 64, 64]}>
+          <MeshDistortMaterial
+            color="#00f3ff"
+            attach="material"
+            distort={0.4}
+            speed={2}
+            metalness={0.9}
+            roughness={0.2}
+          />
+        </Sphere>
+        <OrbitControls 
+          enableZoom={false} 
+          autoRotate 
+          autoRotateSpeed={3}
+          maxPolarAngle={Math.PI / 1.5}
+          minPolarAngle={Math.PI / 3}
+        />
+      </Canvas>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent z-20" />
+    </motion.div>
+  );
+}
+
+./client/api/websocket.ts:
+-------------------------
+let socket: WebSocket | null = null;
+let selectedAgent: string = "ballad"; // Default agent
+
+export const connectWebSocket = (onMessage: (data: any) => void) => {
+  socket = new WebSocket("ws://localhost:8000/ws");
+
+  socket.onopen = () => {
+    console.log("✅ WebSocket connected.");
+  };
+
+// WebSocket event handling
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log("📩 WebSocket Message from Backend:", data);
+  
+    if (data.type === "text") {
+      console.log("🗣 Assistant Responded:", data.message);
+      setMessages((prev) => [...prev, { text: data.message, sender: "assistant" }]);
+    }
+  };
+  
+
+  socket.onerror = (error) => {
+    console.error("❌ WebSocket Error:", error);
+  };
+
+  socket.onclose = () => {
+    console.log("❌ WebSocket disconnected.");
+  };
+};
+
+export const setAgent = (agent: string) => {
+  selectedAgent = agent;
+  console.log(`✅ Selected Agent: ${agent}`);
+};
+
+// ✅ Fix: Ensure message includes the selected agent
+export const sendMessage = (message: string) => {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    const payload = { type: "command", agent: selectedAgent, message };
+    console.log("📤 Sending message to WebSocket:", payload);
+    socket.send(JSON.stringify(payload));
+  } else {
+    console.warn("⚠ WebSocket is not connected.");
+  }
+};
+
+export const closeWebSocket = () => {
+  if (socket) {
+    socket.close();
+  }
+};
+
+
+./client/src/App.tsx:
+--------------------
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { AIAvatar } from './components/AIAvatar';
+import { WaveformVisualizer } from './components/WaveformVisualizer';
+import { VoiceControls } from './components/VoiceControls';
+
+// ✅ Fix: Correct import
+import { setAgent, sendMessage, connectWebSocket } from './api/websocket';
+
+function App() {
+  const [isActive, setIsActive] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState("ballad");
+
+  const handleStart = () => {
+    setIsActive(true);
+  };
+
+  const handleStop = () => {
+    setIsActive(false);
+  };
+
+  const handleAgentChange = (agent: string) => {
+    setSelectedAgent(agent);
+    setAgent(agent); // ✅ Update the agent
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] text-white p-8 relative overflow-hidden">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto space-y-12 relative z-10">
+        <header className="text-center mb-16">
+          <motion.h1
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--neon-blue)] via-[var(--neon-purple)] to-[var(--neon-pink)]"
+          >
+            AI Assistant
+          </motion.h1>
+        </header>
+
+        {/* ✅ Fix: Add Agent Selection */}
+        <div className="flex justify-center gap-4">
+          <label className="text-white">Choose Agent:</label>
+          <select
+            className="p-2 bg-gray-800 text-white rounded-md"
+            value={selectedAgent}
+            onChange={(e) => handleAgentChange(e.target.value)}
+          >
+            <option value="ballad">Ballad (Male)</option>
+            <option value="echo">Echo (Male)</option>
+            <option value="ash">Ash (Male)</option>
+            <option value="coral">Coral (Female)</option>
+            <option value="sage">Sage (Female)</option>
+            <option value="shimmer">Shimmer (Female)</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col items-center space-y-8">
+          <AIAvatar />
+          <WaveformVisualizer isActive={isActive} />
+          <VoiceControls onStart={handleStart} onStop={handleStop} />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default App;
+
+
+./client/src/main.tsx:
+---------------------
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+
+./client/src/index.css:
+----------------------
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --neon-blue: #00f3ff;
+    --neon-purple: #9d00ff;
+    --neon-pink: #ff00f7;
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+body {
+  background: #0a0a0f;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+}
+
+button {
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Glowing text effect */
+.glow-text {
+  text-shadow: 0 0 10px var(--neon-blue),
+               0 0 20px var(--neon-blue),
+               0 0 30px var(--neon-blue);
+}
+
+/* Futuristic scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 243, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-blue);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-purple);
+}
+
+./client/src/vite-env.d.ts:
+--------------------------
+/// <reference types="vite/client" />
+
+
+./client/src/components/WaveformVisualizer.tsx:
+----------------------------------------------
+import { useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+
+export function WaveformVisualizer({ isActive = false }) {
+  const bars = Array.from({ length: 32 }, (_, i) => i);
+  
+  return (
+    <motion.div 
+      className="h-24 flex items-center justify-center gap-1 px-4 glass-panel"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {bars.map((i) => (
+        <motion.div
+          key={i}
+          className="w-1.5 bg-[var(--neon-blue)] rounded-full"
+          animate={{
+            height: isActive ? [20, Math.random() * 60 + 20, 20] : 20,
+          }}
+          transition={{
+            duration: 0.5,
+            repeat: isActive ? Infinity : 0,
+            ease: "linear",
+          }}
+          style={{
+            filter: "blur(0.5px)",
+            boxShadow: "0 0 8px var(--neon-blue)",
+          }}
+        />
+      ))}
+    </motion.div>
+  );
+}
+
+./client/src/components/VoiceControls.tsx:
+-----------------------------------------
+import { useState, useEffect } from "react";
+import { Mic, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+export function VoiceControls({ onStart, onStop }) {
+  const [isListening, setIsListening] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (isListening) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+          setAudioStream(stream);
+          console.log("🎤 Mic activated", stream);
+          
+          // Log audio data (ensure mic is capturing)
+          const audioContext = new AudioContext();
+          const source = audioContext.createMediaStreamSource(stream);
+          const analyser = audioContext.createAnalyser();
+          source.connect(analyser);
+
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          
+          const checkMicInput = () => {
+            analyser.getByteFrequencyData(dataArray);
+            console.log("🎙️ Mic Data:", dataArray);
+          };
+          
+          setInterval(checkMicInput, 500);
+        })
+        .catch((error) => console.error("❌ Mic access error:", error));
+    } else {
+      if (audioStream) {
+        audioStream.getTracks().forEach((track) => track.stop());
+        console.log("🛑 Mic stopped");
+        setAudioStream(null);
+      }
+    }
+  }, [isListening]);
+
+  const handleMicClick = () => {
+    setIsListening(!isListening);
+    if (!isListening) {
+      onStart?.();
+    } else {
+      onStop?.();
+    }
+  };
+
+  const handleStopClick = () => {
+    setIsListening(false);
+    onStop?.();
+  };
+
+  return (
+    <div className="flex justify-center gap-4">
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleMicClick}
+        className={`p-6 rounded-full relative ${
+          isListening ? "bg-[var(--neon-pink)]" : "bg-[var(--neon-blue)]"
+        }`}
+        style={{
+          boxShadow: `0 0 20px ${isListening ? "var(--neon-pink)" : "var(--neon-blue)"}`,
+        }}
+      >
+        <Mic className="w-8 h-8" />
+        {isListening && (
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-white"
+            initial={{ scale: 1 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+        )}
+      </motion.button>
+
+      {isListening && (
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleStopClick}
+          className="p-6 rounded-full bg-red-500"
+          style={{
+            boxShadow: "0 0 20px rgba(239, 68, 68, 0.5)",
+          }}
+        >
+          <X className="w-8 h-8" />
+        </motion.button>
+      )}
+    </div>
+  );
+}
+
+
+./client/src/components/AgentSelector.tsx:
+-----------------------------------------
+import React, { useState } from "react";
+
+interface AgentSelectorProps {
+  onSelect: (agent: string) => void;
+}
+
+export const AgentSelector: React.FC<AgentSelectorProps> = ({ onSelect }) => {
+  const [selectedAgent, setSelectedAgent] = useState("");
+
+  const agents = [
+    { name: "Ballad (Male)", value: "ballad" },
+    { name: "Echo (Male)", value: "echo" },
+    { name: "Ash (Male)", value: "ash" },
+    { name: "Coral (Female)", value: "coral" },
+    { name: "Sage (Female)", value: "sage" },
+    { name: "Shimmer (Female)", value: "shimmer" },
+  ];
+
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedAgent(event.target.value);
+    onSelect(event.target.value);
+  };
+
+  return (
+    <div className="flex flex-col items-center mt-8">
+      <label className="text-lg font-bold mb-2">Select Your AI Assistant:</label>
+      <select
+        className="p-3 rounded-lg bg-gray-800 text-white"
+        value={selectedAgent}
+        onChange={handleChange}
+      >
+        <option value="">-- Choose an Assistant --</option>
+        {agents.map((agent) => (
+          <option key={agent.value} value={agent.value}>
+            {agent.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+
+./client/src/components/AIAvatar.tsx:
+------------------------------------
+import { useRef } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { motion } from 'framer-motion';
+
+export function AIAvatar() {
+  const sphereRef = useRef();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-80 h-80 rounded-full overflow-hidden glass-panel relative"
+      style={{
+        boxShadow: "0 0 40px rgba(0, 243, 255, 0.2)",
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(0,243,255,0.1)] z-10" />
+      <Canvas>
+        <ambientLight intensity={0.6} />
+        <pointLight position={[10, 10, 10]} intensity={1.5} color="#00f3ff" />
+        <pointLight position={[-10, -10, -10]} intensity={0.5} color="#9d00ff" />
+        <Sphere ref={sphereRef} args={[1.2, 64, 64]}>
+          <MeshDistortMaterial
+            color="#00f3ff"
+            attach="material"
+            distort={0.4}
+            speed={2}
+            metalness={0.9}
+            roughness={0.2}
+          />
+        </Sphere>
+        <OrbitControls 
+          enableZoom={false} 
+          autoRotate 
+          autoRotateSpeed={3}
+          maxPolarAngle={Math.PI / 1.5}
+          minPolarAngle={Math.PI / 3}
+        />
+      </Canvas>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent z-20" />
+    </motion.div>
+  );
+}
+
+./client/src/api/websocket.ts:
+-----------------------------
+let socket: WebSocket | null = null;
+let selectedAgent: string = "ballad"; // Default agent
+
+export const connectWebSocket = (onMessage: (data: any) => void) => {
+  socket = new WebSocket("ws://localhost:8000/ws");
+
+  socket.onopen = () => {
+    console.log("✅ WebSocket connected.");
+  };
+
+// WebSocket event handling
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log("📩 WebSocket Message from Backend:", data);
+  
+    if (data.type === "text") {
+      console.log("🗣 Assistant Responded:", data.message);
+      setMessages((prev) => [...prev, { text: data.message, sender: "assistant" }]);
+    }
+  };
+  
+
+  socket.onerror = (error) => {
+    console.error("❌ WebSocket Error:", error);
+  };
+
+  socket.onclose = () => {
+    console.log("❌ WebSocket disconnected.");
+  };
+};
+
+export const setAgent = (agent: string) => {
+  selectedAgent = agent;
+  console.log(`✅ Selected Agent: ${agent}`);
+};
+
+// ✅ Fix: Ensure message includes the selected agent
+export const sendMessage = (message: string) => {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    const payload = { type: "command", agent: selectedAgent, message };
+    console.log("📤 Sending message to WebSocket:", payload);
+    socket.send(JSON.stringify(payload));
+  } else {
+    console.warn("⚠ WebSocket is not connected.");
+  }
+};
+
+export const closeWebSocket = () => {
+  if (socket) {
+    socket.close();
+  }
+};

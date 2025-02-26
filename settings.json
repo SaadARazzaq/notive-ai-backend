@@ -1,0 +1,367 @@
+[
+    {
+        "id": "asst_2pE3KaILTpLqtABmiX5gTJ4F",
+        "created_at": 1739203809,
+        "description": "Analyzes data, generates insights, and performs complex calculations using code interpreter and file search capabilities.",
+        "instructions": "agency_manifesto.md\n\n# Agent Role\n\nAs an Analyst Agent, your role is to analyze data, generate insights, and perform complex calculations to support the research process. You have access to both code execution capabilities and file search functionality to enhance your analytical capabilities.\n\n# Goals\n\n1. Analyze data and generate meaningful insights\n2. Perform complex calculations and data manipulations\n3. Search through relevant files and documentation for context\n4. Support other agents with data-driven decision making\n5. Create visualizations and reports when needed\n\n# Process Workflow\n\n1. When receiving a task, first assess if you need to:\n   - Search existing files for context (using FileSearch)\n   - Execute code for analysis (using CodeInterpreter)\n   - Both of the above\n\n2. If searching files:\n   - Use FileSearch to locate relevant documentation or data\n   - Extract and summarize key information\n   - Consider how this information affects the analysis\n\n3. If performing analysis:\n   - Use CodeInterpreter to write and execute analytical code\n   - Ensure code is well-documented and efficient\n   - Generate visualizations when they would aid understanding\n   - Validate results before sharing\n\n4. When collaborating with other agents:\n   - Provide clear explanations of your findings\n   - Include relevant code snippets or file references\n   - Make specific recommendations based on your analysis\n\n5. Always:\n   - Document your methodology\n   - Explain your reasoning\n   - Highlight any assumptions or limitations\n   - Suggest next steps or areas for further investigation\n",
+        "metadata": {},
+        "model": "gpt-4o-2024-08-06",
+        "name": "AnalystAgent",
+        "object": "assistant",
+        "tools": [
+            {
+                "type": "code_interpreter"
+            },
+            {
+                "type": "file_search",
+                "file_search": {
+                    "max_num_results": null,
+                    "ranking_options": {
+                        "score_threshold": 0.0,
+                        "ranker": "default_2024_08_21"
+                    }
+                }
+            },
+            {
+                "function": {
+                    "name": "SendMessage",
+                    "description": "Use this tool for asynchronous communication with other agents within your agency. Initiate tasks by messaging, and check status and responses later with the 'GetResponse' tool. Relay responses to the user, who instructs on status checks. Continue until task completion.",
+                    "parameters": {
+                        "$defs": {
+                            "recipient": {
+                                "const": "BrowsingAgent",
+                                "enum": [
+                                    "BrowsingAgent"
+                                ],
+                                "title": "recipient",
+                                "type": "string"
+                            }
+                        },
+                        "properties": {
+                            "my_primary_instructions": {
+                                "description": "Please repeat your primary instructions step-by-step, including both completed and the following next steps that you need to perform. For multi-step, complex tasks, first break them down into smaller steps yourself. Then, issue each step individually to the recipient agent via the message parameter. Each identified step should be sent in separate message. Keep in mind, that the recipient agent does not have access to these instructions. You must include recipient agent-specific instructions in the message or additional_instructions parameters.",
+                                "title": "My Primary Instructions",
+                                "type": "string"
+                            },
+                            "recipient": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/recipient"
+                                    }
+                                ],
+                                "description": "BrowsingAgent: This agent is designed to navigate and search web effectively.\n"
+                            },
+                            "message": {
+                                "description": "Specify the task required for the recipient agent to complete. Focus on clarifying what the task entails, rather than providing exact instructions.",
+                                "title": "Message",
+                                "type": "string"
+                            },
+                            "message_files": {
+                                "anyOf": [
+                                    {
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "description": "A list of file ids to be sent as attachments to this message. Only use this if you have the file id that starts with 'file-'.",
+                                "examples": [
+                                    "file-1234",
+                                    "file-5678"
+                                ],
+                                "title": "Message Files"
+                            },
+                            "additional_instructions": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "description": "Additional context or instructions for the recipient agent about the task. For example, additional information provided by the user or other agents.",
+                                "title": "Additional Instructions"
+                            }
+                        },
+                        "required": [
+                            "message",
+                            "my_primary_instructions",
+                            "recipient"
+                        ],
+                        "type": "object"
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "GetResponse",
+                    "description": "This tool allows you to check the status of a task or get a response from a specified recipient agent, if the task has been completed. You must always use 'SendMessage' tool with the designated agent first.",
+                    "parameters": {
+                        "$defs": {
+                            "recipient": {
+                                "const": "BrowsingAgent",
+                                "enum": [
+                                    "BrowsingAgent"
+                                ],
+                                "title": "recipient",
+                                "type": "string"
+                            }
+                        },
+                        "properties": {
+                            "recipient": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/recipient"
+                                    }
+                                ],
+                                "description": "Recipient agent that you want to check the status of. Valid recipients are: ['BrowsingAgent']"
+                            }
+                        },
+                        "required": [
+                            "recipient"
+                        ],
+                        "type": "object"
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            }
+        ],
+        "response_format": "auto",
+        "temperature": 0.0,
+        "tool_resources": {
+            "code_interpreter": {
+                "file_ids": []
+            },
+            "file_search": {
+                "vector_store_ids": []
+            }
+        },
+        "top_p": 1.0,
+        "reasoning_effort": null
+    },
+    {
+        "id": "asst_hsb4uYCE6NArZEdwNVj0gC76",
+        "created_at": 1739203809,
+        "description": "This agent is designed to navigate and search web effectively.",
+        "instructions": "agency_manifesto.md\n\n# Browsing Agent Instructions\n\nAs an advanced browsing agent, you are equipped with specialized tools to navigate and search the web effectively. Your primary objective is to fulfill the user's requests by efficiently utilizing these tools.\n\n### Primary Instructions:\n\n1. **Avoid Guessing URLs**: Never attempt to guess the direct URL. Always perform a Google search if applicable, or return to your previous search results.\n2. **Navigating to New Pages**: Always use the `ClickElement` tool to open links when navigating to a new web page from the current source. Do not guess the direct URL.\n3. **Single Page Interaction**: You can only open and interact with one web page at a time. The previous web page will be closed when you open a new one. To navigate back, use the `GoBack` tool.\n4. **Requesting Screenshots**: Before using tools that interact with the web page, ask the user to send you the appropriate screenshot using one of the commands below.\n\n### Commands to Request Screenshots:\n\n- **'[send screenshot]'**: Sends the current browsing window as an image. Use this command if the user asks what is on the page.\n- **'[highlight clickable elements]'**: Highlights all clickable elements on the current web page. This must be done before using the `ClickElement` tool.\n- **'[highlight text fields]'**: Highlights all text fields on the current web page. This must be done before using the `SendKeys` tool.\n- **'[highlight dropdowns]'**: Highlights all dropdowns on the current web page. This must be done before using the `SelectDropdown` tool.\n\n### Important Reminders:\n\n- Only open and interact with one web page at a time. Do not attempt to read or click on multiple links simultaneously. Complete your interactions with the current web page before proceeding to a different source.\n",
+        "metadata": {},
+        "model": "gpt-4o",
+        "name": "BrowsingAgent",
+        "object": "assistant",
+        "tools": [
+            {
+                "function": {
+                    "name": "ClickElement",
+                    "description": "This tool clicks on an element on the current web page based on its number.\n\nBefore using this tool make sure to highlight clickable elements on the page by outputting '[highlight clickable elements]' message.",
+                    "parameters": {
+                        "properties": {
+                            "element_number": {
+                                "description": "The number of the element to click on. The element numbers are displayed on the page after highlighting elements.",
+                                "title": "Element Number",
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "element_number"
+                        ],
+                        "type": "object"
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "GoBack",
+                    "description": "W\nThis tool allows you to go back 1 page in the browser history. Use it in case of a mistake or if a page shows you unexpected content.",
+                    "parameters": {
+                        "properties": {},
+                        "type": "object",
+                        "required": []
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "ExportFile",
+                    "description": "This tool converts the current full web page into a file and returns its file_id. You can then send this file id back to the user for further processing.",
+                    "parameters": {
+                        "properties": {},
+                        "type": "object",
+                        "required": []
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "Scroll",
+                    "description": "This tool allows you to scroll the current web page up or down by 1 screen height.",
+                    "parameters": {
+                        "properties": {
+                            "direction": {
+                                "description": "Direction to scroll.",
+                                "enum": [
+                                    "up",
+                                    "down"
+                                ],
+                                "title": "Direction",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "direction"
+                        ],
+                        "type": "object"
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "ReadURL",
+                    "description": "This tool reads a single URL and opens it in your current browser window. For each new source, either navigate directly to a URL that you believe contains the answer to the user's question or perform a Google search (e.g., 'https://google.com/search?q=search') if necessary.\n\nIf you are unsure of the direct URL, do not guess. Instead, use the ClickElement tool to click on links that might contain the desired information on the current web page.\n\nNote: This tool only supports opening one URL at a time. The previous URL will be closed when you open a new one.",
+                    "parameters": {
+                        "properties": {
+                            "chain_of_thought": {
+                                "description": "Think step-by-step about where you need to navigate next to find the necessary information.",
+                                "title": "Chain Of Thought",
+                                "type": "string"
+                            },
+                            "url": {
+                                "description": "URL of the webpage.",
+                                "examples": [
+                                    "https://google.com/search?q=search"
+                                ],
+                                "title": "Url",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "chain_of_thought",
+                            "url"
+                        ],
+                        "type": "object"
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "SendKeys",
+                    "description": "This tool sends keys into input fields on the current webpage based on the description of that element and what needs to be typed. It then clicks \"Enter\" on the last element to submit the form. You do not need to tell it to press \"Enter\"; it will do that automatically.\n\nBefore using this tool make sure to highlight the input elements on the page by outputting '[highlight text fields]' message.",
+                    "parameters": {
+                        "properties": {
+                            "elements_and_texts": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "description": "A dictionary where the key is the element number and the value is the text to be typed.",
+                                "examples": [
+                                    {
+                                        "52": "johndoe@gmail.com",
+                                        "53": "password123"
+                                    },
+                                    {
+                                        "3": "John Doe",
+                                        "4": "123 Main St"
+                                    }
+                                ],
+                                "title": "Elements And Texts",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "elements_and_texts"
+                        ],
+                        "type": "object"
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "WebPageSummarizer",
+                    "description": "This tool summarizes the content of the current web page, extracting the main points and providing a concise summary.",
+                    "parameters": {
+                        "properties": {},
+                        "type": "object",
+                        "required": []
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "SelectDropdown",
+                    "description": "This tool selects an option in a dropdown on the current web page based on the description of that element and which option to select.\n\nBefore using this tool make sure to highlight dropdown elements on the page by outputting '[highlight dropdowns]' message.",
+                    "parameters": {
+                        "properties": {
+                            "key_value_pairs": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "description": "A dictionary where the key is the sequence number of the dropdown element and the value is the index of the option to select.",
+                                "examples": [
+                                    {
+                                        "1": 0,
+                                        "2": 1
+                                    },
+                                    {
+                                        "3": 2
+                                    }
+                                ],
+                                "title": "Key Value Pairs",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "key_value_pairs"
+                        ],
+                        "type": "object"
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            },
+            {
+                "function": {
+                    "name": "SolveCaptcha",
+                    "description": "This tool asks a human to solve captcha on the current webpage. Make sure that captcha is visible before running it.",
+                    "parameters": {
+                        "properties": {},
+                        "type": "object",
+                        "required": []
+                    },
+                    "strict": false
+                },
+                "type": "function"
+            }
+        ],
+        "response_format": "auto",
+        "temperature": 0.0,
+        "tool_resources": {
+            "code_interpreter": null,
+            "file_search": null
+        },
+        "top_p": 1.0,
+        "reasoning_effort": null
+    }
+]

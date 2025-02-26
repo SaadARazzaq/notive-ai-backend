@@ -1,0 +1,19 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "src/voice_assistant/main.py",
+        "use": "@vercel/python"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "src/voice_assistant/main.py"
+      }
+    ],
+    "env": {
+      "PYTHONUNBUFFERED": "1"
+    }
+  }
+  
