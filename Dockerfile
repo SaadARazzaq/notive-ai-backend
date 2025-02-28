@@ -16,6 +16,9 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install pip explicitly and upgrade it
 RUN python -m ensurepip && pip install --no-cache-dir --upgrade pip
 
+RUN python -m venv /venv
+ENV PATH="/venv/bin:$PATH"
+
 # Copy and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir pyaudio && \
